@@ -32,7 +32,7 @@ class FreeIbdata {
         $this->mysql->checkConnection();
         $this->mysql->checkPermissions();
         $this->mysql->createDatabaseBackups();
-
+        $this->mysql->recreateDatabases();
     }
 
 

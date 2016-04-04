@@ -21,24 +21,40 @@ class Mysql {
     /** @var  \PDO */
     protected $conn;
 
+    /** @var  string */
+    protected $backupPath;
+
     /**
      * @param callable $logger
      */
     public function __construct($logger) {
         $this->logger = $logger;
         $this->filesystem = new Filesystem($logger);
+        $cfg = Configuration::getConfiguration();
+        $backupPath = isset($cfg["global"]["backup_path"]) ? $cfg["global"]["backup_path"] : './mysqlbackups';
+        $this->backupPath = $this->filesystem->createFolder($backupPath);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function recreateDatabases() {
+        $this->log("Recreating databases...");
+        $databases = $this->getDatabaseList();
+        foreach ($databases as $databaseName) {
+            $this->dumpDatabase($databaseName, $this->backupPath . '/' . $databaseName . '.sql');
+        }
 
     }
 
-
+    /**
+     * @throws \Exception
+     */
     public function createDatabaseBackups() {
-        $cfg = Configuration::getConfiguration();
-        $backupPath = isset($cfg["global"]["backup_path"]) ? $cfg["global"]["backup_path"] : './mysqlbackups';
-        $backupPath = $this->filesystem->createFolder($backupPath);
-        $this->log("Creating database backups in: {$backupPath}");
+        $this->log("Creating database backups in: {$this->backupPath}");
         $databases = $this->getDatabaseList();
         foreach ($databases as $databaseName) {
-            $this->dumpDatabase($databaseName, $backupPath . '/' . $databaseName . '.sql');
+            $this->dumpDatabase($databaseName, $this->backupPath . '/' . $databaseName . '.sql');
         }
     }
 
@@ -143,13 +159,7 @@ class Mysql {
         return $answer;
     }
 
-    /**
-     * @param string $databaseName
-     */
-    protected function createDatabase($databaseName) {
-        $sql = "CREATE DATABASE {$databaseName}";
-        $this->conn->exec($sql);
-    }
+
 
     /**
      * @param string $databaseName
@@ -172,6 +182,14 @@ class Mysql {
         $dbConn = Configuration::getDatabaseConnection($databaseName);
         $sql = "DROP TABLE {$tableName}";
         $dbConn->exec($sql);
+    }
+
+    /**
+     * @param string $databaseName
+     */
+    protected function createDatabase($databaseName) {
+        $sql = "CREATE DATABASE {$databaseName}";
+        $this->conn->exec($sql);
     }
 
     /**
