@@ -30,6 +30,7 @@ class Mysql {
     public function __construct($logger) {
         $this->logger = $logger;
         $this->filesystem = new Filesystem($logger);
+        $this->conn = Configuration::getDatabaseConnection();
         $cfg = Configuration::getConfiguration();
         $backupPath = isset($cfg["global"]["backup_path"]) ? $cfg["global"]["backup_path"] : './mysqlbackups';
         $this->backupPath = $this->filesystem->createFolder($backupPath);
@@ -43,19 +44,20 @@ class Mysql {
         $backupfiles = glob($this->backupPath . '/*.sql');
         foreach ($backupfiles as $backupfile) {
             $databaseName = str_replace([$this->backupPath . '/', '.sql'], '', $backupfile);
-            $this->log("Dropping database({$databaseName})...");
-            $this->dropDatabase($databaseName);
             $this->log("Creating database({$databaseName})...");
             $this->createDatabase($databaseName);
             $this->log("Restoring database({$databaseName})...");
             $this->restoreDatabase($databaseName, $backupfile);
         }
+        $this->log("Ibdata size after restore: " . $this->filesystem->getIbdataSize());
     }
 
     /**
      * @throws \Exception
      */
     public function removeAllDatabasesAndRecreateIbdataFile() {
+        $this->log("Ibdata size before: " . $this->filesystem->getIbdataSize());
+
         $this->log("Dropping all databases...");
         $databases = $this->getDatabaseList();
         $backupfiles = glob($this->backupPath . '/*.sql');
@@ -67,18 +69,46 @@ class Mysql {
             }
         }
 
-        //STOP MYSQL
+        //STOP MYSQL and SLEEP
         $command = 'service mysql stop';
-        $o = $this->executeConsoleCommand($command);
-        $this->log("EXEC({$command}): " . json_encode($o));
-        sleep(3);
+        $this->executeConsoleCommand($command);
+        $this->log("MySql was shut down - sleeping 5 seconds...");
+        sleep(5);
 
+        //REMOVE IBDATA FILES
         $this->filesystem->removeIbdataFiles();
+        $this->log("Ibdata files were removed from your system.");
 
+        //START MYSQL
         $command = 'service mysql start';
-        $o = $this->executeConsoleCommand($command);
-        $this->log("EXEC({$command}): " . json_encode($o));
-        sleep(3);
+        $this->executeConsoleCommand($command);
+        $this->log("MySql was started...");
+
+
+        //GET A NEW CONNECTION
+        $this->conn = Configuration::getDatabaseConnection();
+
+        //WAIT FOR MYSQL SERVER TO BE OPERATIONAL
+        $currentTry = 1;
+        $maxTries = 15;
+        $ready = FALSE;
+        $temporaryDbName = 'ibdatatest';
+        while (!$ready && $currentTry < $maxTries) {
+            try {
+                $this->createDatabase($temporaryDbName);
+                $ready = TRUE;
+            } catch(\Exception $e) {
+                sleep(2);
+            }
+            $currentTry++;
+        }
+        if (!$ready) {
+            throw new \Exception("Could not restart MySql server!");
+        }
+
+        $this->dropDatabase($temporaryDbName);
+        $this->log("Ibdata file was cleared and database is up again.");
+        $this->log("Ibdata size now: " . $this->filesystem->getIbdataSize());
     }
 
     /**
@@ -129,16 +159,22 @@ class Mysql {
      * @todo: check also innodb_data_file_path
      */
     public function checkConnection() {
-        $this->conn = Configuration::getDatabaseConnection();
         $hostname = $this->getConfigurationVariable('hostname');
         $version = $this->getConfigurationVariable('version');
         $this->log("Connected to MySql database: {$version} @{$hostname}");
-        //check if server is using 'innodb_file_per_table'
+
         $innodb_file_per_table = $this->getConfigurationVariable('innodb_file_per_table');
         if ($innodb_file_per_table != 'ON') {
             throw new \Exception("Server is NOT configured with option 'innodb_file_per_table'!");
         }
         $this->log("Configuration 'innodb_file_per_table' OK.");
+
+        $innodb_data_file_path = $this->getConfigurationVariable('innodb_data_file_path');
+        $innodb_data_file_path_bits = explode(":", $innodb_data_file_path);
+        if ($innodb_data_file_path_bits[0] != 'ibdata1') {
+            throw new \Exception("The ibdata file is not in the default location or does not have default name!");
+        }
+        $this->log("Configuration 'innodb_data_file_path': " . json_encode($innodb_data_file_path_bits));
     }
 
     /**

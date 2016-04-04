@@ -24,21 +24,48 @@ class FreeIbdata {
         $this->mysql = new Mysql($logger);
     }
 
-    /**
-     * @param array $options
-     */
     public function execute($options) {
-        $this->mysql->checkConnection();
-        $this->mysql->checkPermissions();
-        $this->mysql->createDatabaseBackups();
-        $this->mysql->removeAllDatabasesAndRecreateIbdataFile();
-        //$this->mysql->recreateDatabases();
-        $this->writeFinalMessage();
+        if (!($options["check-only"] || $options["backup-only"] || $options["do-it"])) {
+            throw new \Exception("No execution options were set. Try --help.");
+        }
+        if ($options["do-it"]) {
+            $this->runAll();
+        }
+        else {
+            if ($options["check-only"]) {
+                $this->runChecks();
+            }
+            if ($options["backup-only"]) {
+                $this->runDatabaseBackups();
+            }
+        }
     }
 
-    private function writeFinalMessage() {
+    /**
+     * @throws \Exception
+     */
+    protected function runAll() {
+        $this->runChecks();
+        $this->runDatabaseBackups();
+        $this->mysql->removeAllDatabasesAndRecreateIbdataFile();
+        $this->mysql->recreateDatabases();
         $this->log(str_repeat("-", 120));
+        $this->log("All done.");
+    }
 
+    /**
+     * @throws \Exception
+     */
+    protected function runDatabaseBackups() {
+        $this->mysql->createDatabaseBackups();
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function runChecks() {
+        $this->mysql->checkConnection();
+        $this->mysql->checkPermissions();
     }
 
     /**

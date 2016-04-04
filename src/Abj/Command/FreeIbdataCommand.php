@@ -10,6 +10,7 @@ namespace Abj\Command;
 use Abj\Ibdata\FreeIbdata;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class FreeIbdataCommand extends Command implements CommandInterface {
@@ -31,6 +32,18 @@ class FreeIbdataCommand extends Command implements CommandInterface {
                 new InputArgument(
                     'config_file', InputArgument::REQUIRED, 'The yaml(.yml) configuration file inside the "'
                                                             . $this->configDir . '" subfolder.'
+                ),
+                new InputOption(
+                    'check-only', '', InputOption::VALUE_NONE,
+                    'Run checks.'
+                ),
+                new InputOption(
+                    'backup-only', '', InputOption::VALUE_NONE,
+                    'Backup all databases.'
+                ),
+                new InputOption(
+                    'do-it', '', InputOption::VALUE_NONE,
+                    'Do it all.'
                 ),
             ]
         );

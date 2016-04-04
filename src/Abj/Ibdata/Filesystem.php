@@ -29,10 +29,20 @@ class Filesystem {
     }
 
 
+    /**
+     *
+     */
     public function removeIbdataFiles() {
         $this->fs->remove($this->mysqlDataDir . '/ibdata1');
         $this->fs->remove($this->mysqlDataDir . '/ib_logfile0');
         $this->fs->remove($this->mysqlDataDir . '/ib_logfile1');
+    }
+
+    /**
+     * @return string
+     */
+    public function getIbdataSize() {
+        return $this->getFileSize($this->mysqlDataDir . '/ibdata1');
     }
 
     /**
@@ -89,6 +99,18 @@ class Filesystem {
         }
         $this->mysqlDataDir = $mysqlDataDir;
         $this->log("Mysql 'datadir' is registered at path: " . $this->mysqlDataDir);
+    }
+
+    /**
+     * @param string $path
+     * @param int    $decimals
+     * @return string
+     */
+    protected function getFileSize($path, $decimals = 2) {
+        $bytes = filesize($path);
+        $units = ['bytes', 'Kb', 'Mb', 'Gb', 'Tb'];
+        $factor = (int) floor((strlen($bytes) - 1) / 3);
+        return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$units[$factor];
     }
 
     /**
