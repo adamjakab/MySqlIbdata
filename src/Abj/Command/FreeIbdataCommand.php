@@ -43,9 +43,7 @@ class FreeIbdataCommand extends Command implements CommandInterface {
      */
     protected function execute(InputInterface $input, OutputInterface $output) {
         parent::_execute($input, $output);
-        $this->log("Starting command " . static::COMMAND_NAME . "...");
         $freeIbdata = new FreeIbdata([$this, 'log']);
         $freeIbdata->execute($input->getOptions());
-        $this->log("Command " . static::COMMAND_NAME . " done.");
     }
 }

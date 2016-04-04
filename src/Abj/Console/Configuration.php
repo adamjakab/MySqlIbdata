@@ -8,7 +8,6 @@
 
 namespace Abj\Console;
 
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Parser;
 
@@ -41,7 +40,6 @@ class Configuration {
         if (!file_exists($configPath)) {
             throw new \InvalidArgumentException("The configuration file does not exist!");
         }
-        $fs = new Filesystem();
         $yamlParser = new Parser();
         $config = $yamlParser->parse(file_get_contents($configPath));
         if (!is_array($config) || !isset($config["configuration"])) {

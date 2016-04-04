@@ -28,6 +28,13 @@ class Filesystem {
         $this->fs = new FS();
     }
 
+
+    public function removeIbdataFiles() {
+        $this->fs->remove($this->mysqlDataDir . '/ibdata1');
+        $this->fs->remove($this->mysqlDataDir . '/ib_logfile0');
+        $this->fs->remove($this->mysqlDataDir . '/ib_logfile1');
+    }
+
     /**
      * @param string $path
      * @param int    $mode
@@ -67,6 +74,18 @@ class Filesystem {
         }
         if (!is_readable($mysqlDataDir)) {
             throw new \Exception("The datadir({$mysqlDataDir}) is not readable by this user!");
+        }
+        if (!is_writable($mysqlDataDir)) {
+            throw new \Exception("The datadir({$mysqlDataDir}) is not writable by this user!");
+        }
+        if (!is_writable($mysqlDataDir . '/ibdata1')) {
+            throw new \Exception("The file({$mysqlDataDir}/ibdata1) is not writable by this user!");
+        }
+        if (!is_writable($mysqlDataDir . '/ib_logfile0')) {
+            throw new \Exception("The file({$mysqlDataDir}/ib_logfile0) is not writable by this user!");
+        }
+        if (!is_writable($mysqlDataDir . '/ib_logfile1')) {
+            throw new \Exception("The file({$mysqlDataDir}/ib_logfile1) is not writable by this user!");
         }
         $this->mysqlDataDir = $mysqlDataDir;
         $this->log("Mysql 'datadir' is registered at path: " . $this->mysqlDataDir);

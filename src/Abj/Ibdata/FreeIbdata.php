@@ -28,13 +28,18 @@ class FreeIbdata {
      * @param array $options
      */
     public function execute($options) {
-        //$this->log("EXECUTING..." . json_encode($options));
         $this->mysql->checkConnection();
         $this->mysql->checkPermissions();
         $this->mysql->createDatabaseBackups();
-        $this->mysql->recreateDatabases();
+        $this->mysql->removeAllDatabasesAndRecreateIbdataFile();
+        //$this->mysql->recreateDatabases();
+        $this->writeFinalMessage();
     }
 
+    private function writeFinalMessage() {
+        $this->log(str_repeat("-", 120));
+
+    }
 
     /**
      * @param string $msg
@@ -44,4 +49,6 @@ class FreeIbdata {
     protected function log($msg, $level = Logger::INFO, $context = []) {
         call_user_func($this->logger, $msg, $level, $context);
     }
+
+
 }
