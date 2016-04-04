@@ -73,26 +73,20 @@ class Configuration {
     }
 
     /**
-     * @param string $databaseName
-     * @return bool|\PDO
+     * @return \PDO
      */
-    public static function getDatabaseConnection($databaseName) {
+    public static function getDatabaseConnection() {
         $cfg = self::getConfiguration();
-        if (!isset($cfg["database"][$databaseName]) || !is_array($cfg["database"][$databaseName])) {
-            throw new \LogicException("Missing configuration for $databaseName in 'database' section!");
+        if (!isset($cfg["database"]) || !is_array($cfg["database"])) {
+            throw new \LogicException("Missing 'database' section in configuration!");
         }
-        $serverType = $cfg["database"][$databaseName]["type"];
-        $serverName = $cfg["database"][$databaseName]["servername"];
-        $username = $cfg["database"][$databaseName]["username"];
-        $password = $cfg["database"][$databaseName]["password"];
-        switch ($serverType) {
-            case "MSSQL":
-                $connection = new \PDO("odbc:$serverName", "$username", "$password");
-                $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-                break;
-            default:
-                throw new \LogicException("The server type($serverType) for $databaseName is not recognized!");
-        }
+
+        $host = isset($cfg["database"]["host"]) ? $cfg["database"]["host"] : '';;
+        $username = isset($cfg["database"]["username"]) ? $cfg["database"]["username"] : '';
+        $password = isset($cfg["database"]["password"]) ? $cfg["database"]["password"] : '';
+
+        $connection = new \PDO("mysql:host={$host}", $username, $password);
+        $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         return $connection;
     }
 
@@ -102,6 +96,4 @@ class Configuration {
     public static function getConfiguration() {
         return self::$configuration;
     }
-
-
 }

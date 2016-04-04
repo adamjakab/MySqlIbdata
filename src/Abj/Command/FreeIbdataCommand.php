@@ -7,6 +7,7 @@
 
 namespace Abj\Command;
 
+use Abj\Ibdata\FreeIbdata;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,14 +44,8 @@ class FreeIbdataCommand extends Command implements CommandInterface {
     protected function execute(InputInterface $input, OutputInterface $output) {
         parent::_execute($input, $output);
         $this->log("Starting command " . static::COMMAND_NAME . "...");
-        $this->executeCommand();
+        $freeIbdata = new FreeIbdata([$this, 'log']);
+        $freeIbdata->execute($input->getOptions());
         $this->log("Command " . static::COMMAND_NAME . " done.");
-    }
-
-    /**
-     * Execute Command
-     */
-    protected function executeCommand() {
-        $this->log(static::COMMAND_NAME . " working...");
     }
 }
