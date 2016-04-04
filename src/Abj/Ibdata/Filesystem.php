@@ -29,6 +29,25 @@ class Filesystem {
     }
 
     /**
+     * @param $databaseName
+     * @return bool
+     */
+    public function checkIfDatabaseTableFilesExist($databaseName, $tableName) {
+        $answer = TRUE;
+        $answer = $answer && is_file($this->mysqlDataDir . '/' . $databaseName . '/' . $tableName . '.frm');
+        $answer = $answer && is_file($this->mysqlDataDir . '/' . $databaseName . '/' . $tableName . '.ibd');
+        return $answer;
+    }
+
+    /**
+     * @param $databaseName
+     * @return bool
+     */
+    public function checkIfDatabaseFolderExists($databaseName) {
+        return is_dir($this->mysqlDataDir . '/' . $databaseName);
+    }
+
+    /**
      * @param string $mysqlDataDir
      * @throws \Exception
      */

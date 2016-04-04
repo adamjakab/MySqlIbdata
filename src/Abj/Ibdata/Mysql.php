@@ -80,14 +80,25 @@ class Mysql {
         if (in_array($temporaryDbName, $databases)) {
             throw new \Exception("Temporary test database({$temporaryDbName}) already exists! Remove & rerun.");
         }
+
         $this->createDatabase($temporaryDbName);
         $databases = $this->getDatabaseList();
         if (!in_array($temporaryDbName, $databases)) {
             throw new \Exception("Unable to create test database({$temporaryDbName})!");
         }
 
+        if (!$this->filesystem->checkIfDatabaseFolderExists($temporaryDbName)) {
+            throw new \Exception("Cannot find test database folder!");
+        }
 
-        //$this->dropDatabase($temporaryDbName);
+        $temporaryDbTable = "data1";
+        $this->createDatabaseTable($temporaryDbName, $temporaryDbTable);
+        if (!$this->filesystem->checkIfDatabaseTableFilesExist($temporaryDbName, $temporaryDbTable)) {
+            throw new \Exception("Cannot find test database table files(.ibd|.frm)!");
+        }
+        $this->dropDatabaseTable($temporaryDbName, $temporaryDbTable);
+        $this->dropDatabase($temporaryDbName);
+        $this->log("Permissions ok.");
     }
 
     /**
@@ -107,11 +118,40 @@ class Mysql {
         return $answer;
     }
 
+    /**
+     * @param string $databaseName
+     */
     protected function createDatabase($databaseName) {
         $sql = "CREATE DATABASE {$databaseName}";
         $this->conn->exec($sql);
     }
 
+    /**
+     * @param string $databaseName
+     * @param string $tableName
+     */
+    protected function createDatabaseTable($databaseName, $tableName) {
+        $dbConn = Configuration::getDatabaseConnection($databaseName);
+        $sql = "CREATE TABLE {$tableName}
+        (id int(11), name varchar(64), PRIMARY KEY (id)
+        ) ENGINE=InnoDB
+        ";
+        $dbConn->exec($sql);
+    }
+
+    /**
+     * @param string $databaseName
+     * @param string $tableName
+     */
+    protected function dropDatabaseTable($databaseName, $tableName) {
+        $dbConn = Configuration::getDatabaseConnection($databaseName);
+        $sql = "DROP TABLE {$tableName}";
+        $dbConn->exec($sql);
+    }
+
+    /**
+     * @param string $databaseName
+     */
     protected function dropDatabase($databaseName) {
         $sql = "DROP DATABASE {$databaseName}";
         $this->conn->exec($sql);

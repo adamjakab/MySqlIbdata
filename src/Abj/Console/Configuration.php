@@ -73,9 +73,10 @@ class Configuration {
     }
 
     /**
+     * @param string|bool $databaseName
      * @return \PDO
      */
-    public static function getDatabaseConnection() {
+    public static function getDatabaseConnection($databaseName = FALSE) {
         $cfg = self::getConfiguration();
         if (!isset($cfg["database"]) || !is_array($cfg["database"])) {
             throw new \LogicException("Missing 'database' section in configuration!");
@@ -85,7 +86,9 @@ class Configuration {
         $username = isset($cfg["database"]["username"]) ? $cfg["database"]["username"] : '';
         $password = isset($cfg["database"]["password"]) ? $cfg["database"]["password"] : '';
 
-        $connection = new \PDO("mysql:host={$host}", $username, $password);
+        $dsn = "mysql:host={$host}" . ($databaseName ? ";dbname={$databaseName}" : "");
+
+        $connection = new \PDO($dsn, $username, $password);
         $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         return $connection;
     }
