@@ -1,0 +1,32 @@
+{
+  "name": "jakabadambalazs/mysql-ibdata",
+  "description": "Free MySql ibdata1 file by moving data to single table files",
+  "type": "project",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "jakabadambalazs",
+      "email": "jakabadambalazs@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=5.5.9",
+    "symfony/yaml": "^2.6",
+    "symfony/filesystem": "^2.6",
+    "symfony/console": "^2.6",
+    "monolog/monolog": "^1.17"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^5.3"
+  },
+  "scripts": {},
+  "autoload": {
+    "psr-0": {
+      "Abj": "src/"
+    }
+  },
+  "extra": {}
+}
+
