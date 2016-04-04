@@ -1,0 +1,15 @@
+## CONFIGURATION TEMPLATE ##
+
+#imports:
+#    - { resource: default.yml }
+configuration:
+  global:
+    log_to_console: true
+    log_to_file: false
+    log_path: ~
+    backup_path: ~
+  database:
+    host: localhost
+    username: dbadmin
+    password: ABJ@02203505
+

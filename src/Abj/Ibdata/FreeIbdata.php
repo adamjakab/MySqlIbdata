@@ -31,6 +31,7 @@ class FreeIbdata {
         //$this->log("EXECUTING..." . json_encode($options));
         $this->mysql->checkConnection();
         $this->mysql->checkPermissions();
+        $this->mysql->createDatabaseBackups();
 
     }
 

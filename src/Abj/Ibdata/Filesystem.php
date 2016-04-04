@@ -29,7 +29,17 @@ class Filesystem {
     }
 
     /**
-     * @param $databaseName
+     * @param string $path
+     * @param int    $mode
+     * @return string
+     */
+    public function createFolder($path, $mode = 0777) {
+        $this->fs->mkdir($path, $mode);
+        return realpath($path) ? realpath($path) : getcwd() . '/' . $path;
+    }
+
+    /**
+     * @param string $databaseName
      * @return bool
      */
     public function checkIfDatabaseTableFilesExist($databaseName, $tableName) {
@@ -40,7 +50,7 @@ class Filesystem {
     }
 
     /**
-     * @param $databaseName
+     * @param string $databaseName
      * @return bool
      */
     public function checkIfDatabaseFolderExists($databaseName) {

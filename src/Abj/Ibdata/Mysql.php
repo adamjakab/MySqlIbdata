@@ -30,38 +30,16 @@ class Mysql {
 
     }
 
-    public function checkConnection() {
-        $this->conn = Configuration::getDatabaseConnection();
-        $hostname = $this->getConfigurationVariable('hostname');
-        $version = $this->getConfigurationVariable('version');
-        $this->log("Connected to MySql database: {$version} @{$hostname}");
-        //check if server is using 'innodb_file_per_table'
-        $innodb_file_per_table = $this->getConfigurationVariable('innodb_file_per_table');
-        if ($innodb_file_per_table != 'ON') {
-            throw new \Exception("Server is NOT configured with option 'innodb_file_per_table'!");
-        }
-        $this->log("Configuration 'innodb_file_per_table' OK.");
-    }
 
-    /**
-     * @param $varName
-     * @return array|string|bool
-     */
-    protected function getConfigurationVariable($varName) {
-        $answer = FALSE;
-        $sql = 'SHOW VARIABLES LIKE ' . $this->conn->quote($varName);
-        $s = $this->conn->query($sql);
-        $res = $s->fetchAll(\PDO::FETCH_ASSOC);
-        if (count($res) > 1) {
-            $answer = [];
-            foreach ($res as $data) {
-                $answer[$data["Variable_name"]] = $data["Value"];
-            }
+    public function createDatabaseBackups() {
+        $cfg = Configuration::getConfiguration();
+        $backupPath = isset($cfg["global"]["backup_path"]) ? $cfg["global"]["backup_path"] : './mysqlbackups';
+        $backupPath = $this->filesystem->createFolder($backupPath);
+        $this->log("Creating database backups in: {$backupPath}");
+        $databases = $this->getDatabaseList();
+        foreach ($databases as $databaseName) {
+            $this->dumpDatabase($databaseName, $backupPath . '/' . $databaseName . '.sql');
         }
-        else if (count($res) == 1) {
-            $answer = $res[0]["Value"];
-        }
-        return $answer;
     }
 
     /**
@@ -73,6 +51,49 @@ class Mysql {
         call_user_func($this->logger, $msg, $level, $context);
     }
 
+    /**
+     * @return array
+     */
+    protected function getDatabaseList() {
+        $answer = [];
+        $exclude = ["mysql", "information_schema", "performance_schema"];
+        $sql = 'SHOW DATABASES';
+        $s = $this->conn->query($sql);
+        $res = $s->fetchAll(\PDO::FETCH_ASSOC);
+        foreach ($res as $data) {
+            if (!in_array($data["Database"], $exclude)) {
+                $answer[] = $data["Database"];
+            }
+        }
+        return $answer;
+    }
+
+    /**
+     * @param string $databaseName
+     * @param string $dumpfile
+     * @throws \Exception
+     */
+    protected function dumpDatabase($databaseName, $dumpfile) {
+        $cfg = Configuration::getConfiguration();
+        $username = isset($cfg["database"]["username"]) ? $cfg["database"]["username"] : '';
+        $password = isset($cfg["database"]["password"]) ? $cfg["database"]["password"] : '';
+        $command = "mysqldump"
+                   . ($username ? " -u{$username}" : "")
+                   . ($password ? " -p{$password}" : "")
+                   . " " . $databaseName
+                   . " > " . $dumpfile;;
+        $output = FALSE;
+        $ret = FALSE;
+        exec($command, $output, $ret);
+        if ($ret != 0) {
+            throw new \Exception("Backup failed for database({$databaseName}): " . json_encode($output));
+        }
+        $this->log("Backup for database({$databaseName}) OK.");
+    }
+
+    /**
+     * @throws \Exception
+     */
     public function checkPermissions() {
         $this->filesystem->setDatadir($this->getConfigurationVariable('datadir'));
         $databases = $this->getDatabaseList();
@@ -102,18 +123,22 @@ class Mysql {
     }
 
     /**
-     * @return array
+     * @param $varName
+     * @return array|string|bool
      */
-    protected function getDatabaseList() {
-        $answer = [];
-        $exclude = ["mysql", "information_schema"];
-        $sql = 'SHOW DATABASES';
+    protected function getConfigurationVariable($varName) {
+        $answer = FALSE;
+        $sql = 'SHOW VARIABLES LIKE ' . $this->conn->quote($varName);
         $s = $this->conn->query($sql);
         $res = $s->fetchAll(\PDO::FETCH_ASSOC);
-        foreach ($res as $data) {
-            if (!in_array($data["Database"], $exclude)) {
-                $answer[] = $data["Database"];
+        if (count($res) > 1) {
+            $answer = [];
+            foreach ($res as $data) {
+                $answer[$data["Variable_name"]] = $data["Value"];
             }
+        }
+        else if (count($res) == 1) {
+            $answer = $res[0]["Value"];
         }
         return $answer;
     }
@@ -156,4 +181,21 @@ class Mysql {
         $sql = "DROP DATABASE {$databaseName}";
         $this->conn->exec($sql);
     }
+
+    /**
+     * @throws \Exception
+     */
+    public function checkConnection() {
+        $this->conn = Configuration::getDatabaseConnection();
+        $hostname = $this->getConfigurationVariable('hostname');
+        $version = $this->getConfigurationVariable('version');
+        $this->log("Connected to MySql database: {$version} @{$hostname}");
+        //check if server is using 'innodb_file_per_table'
+        $innodb_file_per_table = $this->getConfigurationVariable('innodb_file_per_table');
+        if ($innodb_file_per_table != 'ON') {
+            throw new \Exception("Server is NOT configured with option 'innodb_file_per_table'!");
+        }
+        $this->log("Configuration 'innodb_file_per_table' OK.");
+    }
+
 }
