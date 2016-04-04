@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+defined("PROJECT_ROOT") || define("PROJECT_ROOT", __DIR__);
+set_time_limit(0);
+@include_once __DIR__ . '/vendor/autoload.php';
+use Abj\Console\Application;
+
+$app = new Application('Application', '1.0');
+$app->run();

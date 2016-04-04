@@ -1,4 +1,6 @@
 .idea
 vendor/
+*.log
 composer.lock
+config/*.yml
 phpunit.xml
